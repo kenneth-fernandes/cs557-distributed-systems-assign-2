@@ -3,7 +3,7 @@ all: clean
 	mkdir bin
 	mkdir bin/client_classes
 	mkdir bin/server_classes
-	#javac -classpath $(LIB_PATH) -d bin/client_classes/ src/JavaClient.java src/CalculatorHandler.java gen-java/chord/*
+	javac -classpath $(LIB_PATH) -d bin/client_classes/ src/JavaClient.java src/FileStoreHandler.java gen-java/chord/*
 	javac -classpath $(LIB_PATH) -d bin/server_classes/ src/JavaServer.java src/FileStoreHandler.java gen-java/chord/*
 
 
