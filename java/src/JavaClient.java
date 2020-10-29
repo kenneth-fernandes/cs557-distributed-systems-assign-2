@@ -1,0 +1,7 @@
+/**
+ * JavaClient
+ */
+public class JavaClient {
+
+    
+}
