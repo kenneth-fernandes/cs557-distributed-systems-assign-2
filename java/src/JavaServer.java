@@ -1,4 +1,6 @@
 
+import java.net.InetAddress;
+
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TServer.Args;
 import org.apache.thrift.server.TSimpleServer;
@@ -16,12 +18,15 @@ public class JavaServer {
     public static FileStoreHandler handler;
     public static FileStore.Processor processor;
     public static int port;
+    public static String ipAddr;
 
   public static void main(String [] args) {
     try {
       handler = new FileStoreHandler();
       processor = new FileStore.Processor(handler);
-      port= Integer.valueOf(args[0]);
+      port = Integer.valueOf(args[0]);
+      ipAddr = InetAddress.getLocalHost().getHostAddress();
+
       Runnable simple = new Runnable() {
         public void run() {
           simple(processor);
@@ -44,13 +49,13 @@ public class JavaServer {
 
   public static void simple(FileStore.Processor processor) {
     try {
-      TServerTransport serverTransport = new TServerSocket(9090);
+      TServerTransport serverTransport = new TServerSocket(port);
       TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
 
       // Use this for a multithreaded server
       // TServer server = new TThreadPoolServer(new TThreadPoolServer.Args(serverTransport).processor(processor));
 
-      System.out.println("Starting the simple server...");
+      System.out.println("Starting the simple server at " + ipAddr + ":" + port + " ...");
       server.serve();
     } catch (Exception e) {
       e.printStackTrace();
