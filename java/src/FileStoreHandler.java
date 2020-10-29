@@ -3,7 +3,7 @@ import org.apache.thrift.TException;
 
 import chord.*;
 
-public class FileStoreHandler implements Filestore.Iface {
+public class FileStoreHandler implements FileStore.Iface {
     private RFile rFile;
     private NodeID nodeId = new NodeID();
 

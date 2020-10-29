@@ -14,13 +14,13 @@ import chord.*;
 public class JavaServer {
     
     public static FileStoreHandler handler;
-    public static FileStoreHandler.Processor processor;
+    public static FileStore.Processor processor;
     public static int port;
 
   public static void main(String [] args) {
     try {
       handler = new FileStoreHandler();
-      processor = new FileStoreHandler.Processor(handler);
+      processor = new FileStore.Processor(handler);
       port= Integer.valueOf(args[0]);
       Runnable simple = new Runnable() {
         public void run() {
@@ -42,7 +42,7 @@ public class JavaServer {
     }
   }
 
-  public static void simple(FileStoreHandler.Processor processor) {
+  public static void simple(FileStore.Processor processor) {
     try {
       TServerTransport serverTransport = new TServerSocket(9090);
       TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
