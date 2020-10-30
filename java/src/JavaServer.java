@@ -17,15 +17,16 @@ public class JavaServer {
     
     public static FileStoreHandler handler;
     public static FileStore.Processor processor;
-    public static int port;
+    public static int portNum;
     public static String ipAddr;
 
   public static void main(String [] args) {
     try {
-      handler = new FileStoreHandler();
-      processor = new FileStore.Processor(handler);
-      port = Integer.valueOf(args[0]);
+
+      portNum = Integer.valueOf(args[0]);
       ipAddr = InetAddress.getLocalHost().getHostAddress();
+      handler = new FileStoreHandler(ipAddr, portNum);
+      processor = new FileStore.Processor(handler);
 
       Runnable simple = new Runnable() {
         public void run() {

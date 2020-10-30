@@ -14,39 +14,24 @@ import org.apache.thrift.protocol.TProtocol;
 public class JavaClient {
   public static void main(String [] args) {
 
-    if (args.length != 3) {
+    if (args.length != 2) {
       System.out.println("Please enter 'simple' or 'secure' ip/host port");
       System.exit(0);
     }
 
     try {
       TTransport transport;
-      if (args[0].contains("simple")) {
-        transport = new TSocket(args[1], Integer.valueOf(args[2]));
-        transport.open();
-      }
-      else {
-        /*
-         * Similar to the server, you can use the parameters to setup client parameters or
-         * use the default settings. On the client side, you will need a TrustStore which
-         * contains the trusted certificate along with the public key. 
-         * For this example it's a self-signed cert. 
-         */
-        TSSLTransportParameters params = new TSSLTransportParameters();
-        params.setTrustStore("/home/cs557-inst/thrift-0.13.0/lib/java/test/.truststore", "thrift", "SunX509", "JKS");
-        /*
-         * Get a client transport instead of a server transport. The connection is opened on
-         * invocation of the factory method, no need to specifically call open()
-         */
-        transport = TSSLTransportFactory.getClientSocket(args[1], Integer.valueOf(args[2]), 0, params);
-      }
-
+      
+      transport = new TSocket(args[1], Integer.valueOf(args[2]));
+      transport.open();
+      
       TProtocol protocol = new  TBinaryProtocol(transport);
       FileStore.Client client = new FileStore.Client(protocol);
 
       perform(client);
 
       transport.close();
+      
     } catch (TException x) {
       x.printStackTrace();
     } 
@@ -54,6 +39,9 @@ public class JavaClient {
 
   private static void perform(FileStore.Client client) throws TException
   {
+
+    String fileName = "sample.txt";
+
     // client.ping();
     // System.out.println("ping()");
 
@@ -84,5 +72,10 @@ public class JavaClient {
 
     // SharedStruct log = client.getStruct(1);
     // System.out.println("Check log: " + log.value);
+  }
+
+  private static void writeFile(){
+    RFile rFile = new RFile();
+    RFileMetadata rFileMetaData = new RFileMetadata();
   }
 }
