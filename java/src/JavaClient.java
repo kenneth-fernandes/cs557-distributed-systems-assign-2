@@ -15,7 +15,7 @@ public class JavaClient {
   public static void main(String [] args) {
 
     if (args.length != 2) {
-      System.out.println("Please enter 'simple' or 'secure' ip/host port");
+      System.out.println("Please enter ip/host port");
       System.exit(0);
     }
 
@@ -32,7 +32,7 @@ public class JavaClient {
 
       transport.close();
       
-    } catch (TException x) {
+    } catch (SystemException | TException x) {
       x.printStackTrace();
     } 
   }
