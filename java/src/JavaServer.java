@@ -12,15 +12,14 @@ import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 
 import chord.*;
 
-
 public class JavaServer {
-    
-    public static FileStoreHandler handler;
-    public static FileStore.Processor processor;
-    public static int portNum;
-    public static String ipAddr;
 
-  public static void main(String [] args) {
+  public static FileStoreHandler handler;
+  public static FileStore.Processor processor;
+  public static int portNum;
+  public static String ipAddr;
+
+  public static void main(String[] args) {
     try {
 
       portNum = Integer.valueOf(args[0]);
@@ -32,14 +31,11 @@ public class JavaServer {
         public void run() {
           simple(processor);
         }
-      };      
-      /*
-      Runnable secure = new Runnable() {
-        public void run() {
-          secure(processor);
-        }
       };
-      */
+      /*
+       * Runnable secure = new Runnable() { public void run() { secure(processor); }
+       * };
+       */
 
       new Thread(simple).start();
       // new Thread(secure).start();
@@ -54,7 +50,8 @@ public class JavaServer {
       TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
 
       // Use this for a multithreaded server
-      // TServer server = new TThreadPoolServer(new TThreadPoolServer.Args(serverTransport).processor(processor));
+      // TServer server = new TThreadPoolServer(new
+      // TThreadPoolServer.Args(serverTransport).processor(processor));
 
       System.out.println("Starting the simple server at " + ipAddr + ":" + port + " ...");
       server.serve();
