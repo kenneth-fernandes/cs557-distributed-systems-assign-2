@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.BufferedReader;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -37,12 +38,21 @@ public class FileStoreHandler implements FileStore.Iface {
         fileMetaDataHMap = new HashMap<String, Map<String, String>>();
     }
 
+    /**
+     * Function to write file to server node
+     * 
+     * @param rFile
+     * @throws SystemException
+     * @throws TException
+     */
+    @Override
     public void writeFile(RFile rFile) throws SystemException, TException {
         System.out.println("writeFile()");
         String fileName = rFile.getMeta().getFilename();
         String content = rFile.getContent();
 
         NodeID newNodeId = findSucc(getSHA(fileName));
+        System.out.println("Writefile after findSucc");
 
         if (!newNodeId.equals(nodeId)) {
             throw (new SystemException()).setMessage("Error: Error in writing file on the server");
@@ -55,32 +65,19 @@ public class FileStoreHandler implements FileStore.Iface {
             metaDataHMap.put("Filename", fileName);
             metaDataHMap.put("Version_Number", "0");
             fileMetaDataHMap.put(fileName, metaDataHMap);
-
         }
-
         fileContentHMap.put(fileName, content);
-
-        // BufferedReader br;
-        // try {
-        // br = new BufferedReader(new FileReader(fileName));
-        // String content = br.readLine();
-
-        // while (content != null) {
-        // content += "\n" + br.readLine();
-        // }
-        // br.close();
-        // fileContentHMap.put(fileName, content == null ? "" : content);
-
-        // } catch (Exception x) {
-        // throw (new SystemException())
-        // .setMessage("Error: Error in reading data from file provided by user in
-        // writeFile()");
-        // } finally {
-        // br.close();
-        // }
-
     }
 
+    /**
+     * Function to read file that is stored on the server
+     * 
+     * @param filename
+     * @return
+     * @throws SystemException
+     * @throws TException
+     */
+    @Override
     public RFile readFile(String filename) throws SystemException, TException {
         System.out.println("readFile()");
         NodeID newNodeId = findSucc(getSHA(filename));
@@ -115,29 +112,60 @@ public class FileStoreHandler implements FileStore.Iface {
         return rFile;
     }
 
+    /**
+     * Function to update finger table of the node
+     * 
+     * @param node_list
+     * @throws SystemException
+     * @throws TException
+     */
+    @Override
     public void setFingertable(List<NodeID> node_list) throws SystemException, TException {
         System.out.println("setFingertable()");
         this.fingerTable = node_list;
     }
 
+    /**
+     * Function to find successor node based on key
+     * 
+     * @param key
+     * @return
+     * @throws SystemException
+     * @throws TException
+     */
+    @Override
     public NodeID findSucc(String key) throws SystemException, TException {
         System.out.println("findSucc()");
         NodeID newNodeId = findPred(key);
         NodeID finalNodeId = null;
         FileStore.Client client = null;
-        try {
-            TTransport transport = new TSocket(newNodeId.getIp(), newNodeId.getPort());
-            transport.open();
-            TProtocol protocol = new TBinaryProtocol(transport);
-            client = new FileStore.Client(protocol);
-            
-        } catch (TException x) {
-            throw (new SystemException()).setMessage("Error: Unable to open connection at node.");
+        if (newNodeId.getId().compareTo(nodeId.getId()) != 0) {
+            try {
+                TTransport transport = new TSocket(newNodeId.getIp(), newNodeId.getPort());
+                transport.open();
+                TProtocol protocol = new TBinaryProtocol(transport);
+                client = new FileStore.Client(protocol);
+                return client.getNodeSucc();
+            } catch (TException x) {
+                throw (new SystemException()).setMessage("Error: Unable to open connection at node.");
+            } finally {
+                // this.getNodeSucc();
+            }
+        } else {
+            return this.getNodeSucc();
         }
 
-        return client.getNodeSucc();
     }
 
+    /**
+     * Function to find predecessor node by key
+     * 
+     * @param key
+     * @return
+     * @throws SystemException
+     * @throws TException
+     */
+    @Override
     public NodeID findPred(String key) throws SystemException, TException {
         System.out.println("findPred()");
         boolean isNodeInRange;
@@ -150,7 +178,6 @@ public class FileStoreHandler implements FileStore.Iface {
         while (!isNodeInRange && counter > 0) {
             NodeID newNodeId = fingerTable.get(counter);
             if (checkIsNodeInRange(newNodeId.getId(), nodeId.getId(), key)) {
-                System.out.println("findPred() - inner while");
                 return openConnectionAtNode(newNodeId, key);
             }
             counter -= 1;
@@ -158,15 +185,30 @@ public class FileStoreHandler implements FileStore.Iface {
         return nodeId;
     }
 
+    /**
+     * Function to that returns the closest node that follows the current node
+     * 
+     * @return
+     * @throws SystemException
+     * @throws TException
+     */
+    @Override
     public NodeID getNodeSucc() throws SystemException, TException {
         System.out.println("getNodeSucc()");
         if (isFingerTableEmpty(fingerTable)) {
             throw (new SystemException()).setMessage("Error: Finger table is not initialized.");
         }
-        System.out.println(fingerTable.get(0).getId());
         return fingerTable.get(0);
     }
 
+    /**
+     * Function to get SHA-256 of a string value
+     * 
+     * @param key
+     * @return
+     * @throws SystemException
+     * @throws TException
+     */
     private String getSHA(String key) throws SystemException, TException {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -178,15 +220,27 @@ public class FileStoreHandler implements FileStore.Iface {
             return hexString.toString();
         } catch (NoSuchAlgorithmException x) {
             throw (new SystemException()).setMessage("Error: Error in getting SHA-256");
-        } finally {
-            return "";
         }
     }
 
+    /**
+     * Function to check if finger table of node is empty
+     * 
+     * @param fingerTable
+     * @return
+     */
     private boolean isFingerTableEmpty(List<NodeID> fingerTable) {
         return fingerTable == null;
     }
 
+    /**
+     * Function to find is node is in range on firstNode and secondNode
+     * 
+     * @param keyNode
+     * @param firstNode
+     * @param secondNode
+     * @return
+     */
     private boolean checkIsNodeInRange(String keyNode, String firstNode, String secondNode) {
         boolean flag = false;
         // If Node1 is less than Node2
@@ -201,6 +255,15 @@ public class FileStoreHandler implements FileStore.Iface {
         return flag;
     }
 
+    /**
+     * Function to open connection at a node
+     * 
+     * @param nodeId
+     * @param keyNode
+     * @return
+     * @throws SystemException
+     * @throws TException
+     */
     private NodeID openConnectionAtNode(NodeID nodeId, String keyNode) throws SystemException, TException {
         try {
             TTransport transport = new TSocket(nodeId.getIp(), nodeId.getPort());

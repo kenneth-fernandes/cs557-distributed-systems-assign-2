@@ -55,21 +55,20 @@ public class JavaClient {
     readFileOnClient(client);
   }
 
+  /**
+   * Function that writes data to the server
+   * 
+   * @param client
+   * @throws SystemException
+   * @throws TException
+   * @throws IOException
+   */
   private static void writeFileOnClient(FileStore.Client client) throws SystemException, TException, IOException {
     String fileName = "sample.txt";
 
     String content = "Content";
 
-    // BufferedReader br;
     try {
-      // br = new BufferedReader(new FileReader(fileName));
-      // content = br.readLine();
-
-      // while (content != null) {
-      //   content += "\n" + br.readLine();
-      // }
-      // br.close();
-      // content = content == null ? "" : content;
 
       RFile rFile = new RFile();
       RFileMetadata rFileMetaData = new RFileMetadata();
@@ -87,9 +86,16 @@ public class JavaClient {
 
     } catch (TException x) {
       throw x;
-    } 
+    }
   }
 
+  /**
+   * Function to read file from the server
+   * 
+   * @param client
+   * @throws SystemException
+   * @throws TException
+   */
   private static void readFileOnClient(FileStore.Client client) throws SystemException, TException {
     String fileName = "sample.txt";
     NodeID nodeId = client.findSucc(getSHA(fileName));
@@ -106,20 +112,28 @@ public class JavaClient {
     transport.close();
   }
 
+  /**
+   * Function to get SHA-256 of a string value
+   * 
+   * @param key
+   * @return
+   * @throws SystemException
+   * @throws TException
+   */
   private static String getSHA(String key) throws SystemException, TException {
     try {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        BigInteger number = new BigInteger(1, md.digest(key.getBytes(StandardCharsets.UTF_8)));
-        StringBuilder hexString = new StringBuilder(number.toString(16));
-        while (hexString.length() < 32) {
-            hexString.insert(0, '0');
-        }
-        return hexString.toString();
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      BigInteger number = new BigInteger(1, md.digest(key.getBytes(StandardCharsets.UTF_8)));
+      StringBuilder hexString = new StringBuilder(number.toString(16));
+      while (hexString.length() < 32) {
+        hexString.insert(0, '0');
+      }
+      return hexString.toString();
     } catch (NoSuchAlgorithmException x) {
-        throw (new SystemException()).setMessage("Error: Error in getting SHA-256");
+      throw (new SystemException()).setMessage("Error: Error in getting SHA-256");
     } finally {
-        return "";
+      return "";
     }
-}
+  }
 
 }
