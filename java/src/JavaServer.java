@@ -46,14 +46,14 @@ public class JavaServer {
 
   public static void simple(FileStore.Processor processor) {
     try {
-      TServerTransport serverTransport = new TServerSocket(port);
+      TServerTransport serverTransport = new TServerSocket(portNum);
       TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
 
       // Use this for a multithreaded server
       // TServer server = new TThreadPoolServer(new
       // TThreadPoolServer.Args(serverTransport).processor(processor));
 
-      System.out.println("Starting the simple server at " + ipAddr + ":" + port + " ...");
+      System.out.println("Starting the simple server at " + ipAddr + ":" + portNum + " ...");
       server.serve();
     } catch (Exception e) {
       e.printStackTrace();

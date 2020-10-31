@@ -2,11 +2,20 @@ import org.apache.thrift.TException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.io.BufferedReader;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
+import org.apache.thrift.TException;
+import org.apache.thrift.transport.TSSLTransportFactory;
+import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
 
 import chord.FileStore;
 import chord.NodeID;
@@ -23,8 +32,8 @@ public class FileStoreHandler implements FileStore.Iface {
     private Map<String, Map<String, String>> fileMetaDataHMap;
     private Map<String, String> fileContentHMap;
 
-    public FileStoreHandler(String ipAddr, int portNum) {
-        nodeId = new NodeID(getSHA(ipAddr + ":" + port), ipAddr, port);
+    public FileStoreHandler(String ipAddr, int portNum) throws SystemException, TException {
+        nodeId = new NodeID(getSHA(ipAddr + ":" + portNum), ipAddr, portNum);
         fileMetaDataHMap = new HashMap<String, Map<String, String>>();
     }
 
@@ -45,7 +54,7 @@ public class FileStoreHandler implements FileStore.Iface {
             Map<String, String> metaDataHMap = new HashMap<String, String>();
             metaDataHMap.put("Filename", fileName);
             metaDataHMap.put("Version_Number", "0");
-            fileMetaDataHMap.put(filename, metaDataHMap);
+            fileMetaDataHMap.put(fileName, metaDataHMap);
 
         }
 
@@ -114,16 +123,18 @@ public class FileStoreHandler implements FileStore.Iface {
     public NodeID findSucc(String key) throws SystemException, TException {
         System.out.println("findSucc()");
         NodeID newNodeId = findPred(key);
+        NodeID finalNodeId = null;
+        FileStore.Client client = null;
         try {
             TTransport transport = new TSocket(newNodeId.getIp(), newNodeId.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
-            FileStore.Client client = new FileStore.Client(protocol);
+            client = new FileStore.Client(protocol);
+            
         } catch (TException x) {
-            throw x;
-        } catch (SystemException x) {
             throw (new SystemException()).setMessage("Error: Unable to open connection at node.");
         }
+
         return client.getNodeSucc();
     }
 
@@ -139,6 +150,7 @@ public class FileStoreHandler implements FileStore.Iface {
         while (!isNodeInRange && counter > 0) {
             NodeID newNodeId = fingerTable.get(counter);
             if (checkIsNodeInRange(newNodeId.getId(), nodeId.getId(), key)) {
+                System.out.println("findPred() - inner while");
                 return openConnectionAtNode(newNodeId, key);
             }
             counter -= 1;
@@ -151,17 +163,24 @@ public class FileStoreHandler implements FileStore.Iface {
         if (isFingerTableEmpty(fingerTable)) {
             throw (new SystemException()).setMessage("Error: Finger table is not initialized.");
         }
+        System.out.println(fingerTable.get(0).getId());
         return fingerTable.get(0);
     }
 
-    private String getSHA(String key) {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        BigInteger number = new BigInteger(1, md.digest(key.getBytes(StandardCharsets.UTF_8)));
-        StringBuilder hexString = new StringBuilder(number.toString(16));
-        while (hexString.length() < 32) {
-            hexString.insert(0, '0');
+    private String getSHA(String key) throws SystemException, TException {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            BigInteger number = new BigInteger(1, md.digest(key.getBytes(StandardCharsets.UTF_8)));
+            StringBuilder hexString = new StringBuilder(number.toString(16));
+            while (hexString.length() < 32) {
+                hexString.insert(0, '0');
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException x) {
+            throw (new SystemException()).setMessage("Error: Error in getting SHA-256");
+        } finally {
+            return "";
         }
-        return hexString.toString();
     }
 
     private boolean isFingerTableEmpty(List<NodeID> fingerTable) {
@@ -188,12 +207,12 @@ public class FileStoreHandler implements FileStore.Iface {
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             FileStore.Client client = new FileStore.Client(protocol);
-            return client.findPred(key);
+            return client.findPred(keyNode);
         } catch (TException x) {
-            throw x;
-        } catch (SystemException x) {
             throw (new SystemException()).setMessage("Error: Unable to open connection at node.");
+        } finally {
+            return nodeId;
         }
-        return nodeId;
+
     }
 }

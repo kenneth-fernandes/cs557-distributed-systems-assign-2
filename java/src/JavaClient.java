@@ -12,6 +12,15 @@ import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import java.nio.file.Paths;
 
 public class JavaClient {
@@ -25,7 +34,7 @@ public class JavaClient {
     try {
       TTransport transport;
 
-      transport = new TSocket(args[1], Integer.valueOf(args[2]));
+      transport = new TSocket(args[0], Integer.valueOf(args[1]));
       transport.open();
 
       TProtocol protocol = new TBinaryProtocol(transport);
@@ -35,37 +44,37 @@ public class JavaClient {
 
       transport.close();
 
-    } catch (SystemException | TException x) {
+    } catch (Exception x) {
       x.printStackTrace();
     }
   }
 
-  private static void perform(FileStore.Client client) throws SystemException, TException {
-    writeFile(client);
+  private static void perform(FileStore.Client client) throws SystemException, TException, IOException {
+    writeFileOnClient(client);
 
-    readFile(client);
+    readFileOnClient(client);
   }
 
-  private static void writeFile(FileStore.Client client) throws SystemException, TException {
+  private static void writeFileOnClient(FileStore.Client client) throws SystemException, TException, IOException {
     String fileName = "sample.txt";
 
-    String content = "";
+    String content = "Content";
 
-    BufferedReader br;
+    // BufferedReader br;
     try {
-      br = new BufferedReader(new FileReader(Paths.get(fileName)));
-      content = br.readLine();
+      // br = new BufferedReader(new FileReader(fileName));
+      // content = br.readLine();
 
-      while (content != null) {
-        content += "\n" + br.readLine();
-      }
-      br.close();
-      content = content == null ? "" : content;
+      // while (content != null) {
+      //   content += "\n" + br.readLine();
+      // }
+      // br.close();
+      // content = content == null ? "" : content;
 
       RFile rFile = new RFile();
       RFileMetadata rFileMetaData = new RFileMetadata();
 
-      rFileMetaData.setFilename(filename);
+      rFileMetaData.setFilename(fileName);
       rFileMetaData.setFilenameIsSet(true);
 
       rFile.setMeta(rFileMetaData);
@@ -76,19 +85,41 @@ public class JavaClient {
 
       client.writeFile(rFile);
 
-    } catch (Exception x) {
+    } catch (TException x) {
       throw x;
-    } finally {
-      br.close();
-    }
+    } 
   }
 
-  private static void readFile(FileStore.Client client) throws SystemException, TException {
+  private static void readFileOnClient(FileStore.Client client) throws SystemException, TException {
     String fileName = "sample.txt";
-    RFile rFile = client.readFile(filename);
+    NodeID nodeId = client.findSucc(getSHA(fileName));
+    TTransport transport = new TSocket(nodeId.getIp(), nodeId.getPort());
+    transport.open();
+
+    TProtocol protocol = new TBinaryProtocol(transport);
+    FileStore.Client readFileClient = new FileStore.Client(protocol);
+
+    RFile rFile = readFileClient.readFile(fileName);
     System.out.println("Filename - " + rFile.getMeta().getFilename());
     System.out.println("Version Number - " + rFile.getMeta().getVersion());
     System.out.println("Content - " + rFile.getContent());
+    transport.close();
   }
+
+  private static String getSHA(String key) throws SystemException, TException {
+    try {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        BigInteger number = new BigInteger(1, md.digest(key.getBytes(StandardCharsets.UTF_8)));
+        StringBuilder hexString = new StringBuilder(number.toString(16));
+        while (hexString.length() < 32) {
+            hexString.insert(0, '0');
+        }
+        return hexString.toString();
+    } catch (NoSuchAlgorithmException x) {
+        throw (new SystemException()).setMessage("Error: Error in getting SHA-256");
+    } finally {
+        return "";
+    }
+}
 
 }
