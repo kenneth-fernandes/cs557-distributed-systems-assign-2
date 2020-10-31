@@ -52,10 +52,9 @@ public class FileStoreHandler implements FileStore.Iface {
         String content = rFile.getContent();
 
         NodeID newNodeId = findSucc(getSHA(fileName));
-        System.out.println("Writefile after findSucc");
 
         if (!newNodeId.equals(nodeId)) {
-            throw (new SystemException()).setMessage("Error: Error in writing file on the server");
+            throw (new SystemException()).setMessage("Error: Write File - Server node does not own the file's ID");
         }
         if (fileMetaDataHMap.containsKey(fileName)) {
             fileMetaDataHMap.get(fileName).put("Version_Number",
@@ -85,7 +84,7 @@ public class FileStoreHandler implements FileStore.Iface {
         rFile = null;
 
         if (!newNodeId.equals(nodeId)) {
-            throw (new SystemException()).setMessage("Error: Error in reading file from the server");
+            throw (new SystemException()).setMessage("Error: Read File - Server node does not own the file's ID");
         }
 
         if (fileMetaDataHMap.containsKey(filename)) {
