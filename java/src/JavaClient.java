@@ -12,6 +12,8 @@ import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 
+import java.nio.file.Paths;
+
 public class JavaClient {
   public static void main(String[] args) {
 
@@ -38,44 +40,55 @@ public class JavaClient {
     }
   }
 
-  private static void perform(FileStore.Client client) throws TException {
+  private static void perform(FileStore.Client client) throws SystemException, TException {
+    writeFile(client);
 
+    readFile(client);
+  }
+
+  private static void writeFile(FileStore.Client client) throws SystemException, TException {
     String fileName = "sample.txt";
 
-    // client.ping();
-    // System.out.println("ping()");
+    String content = "";
 
-    // int sum = client.add(1,1);
-    // System.out.println("1+1=" + sum);
+    BufferedReader br;
+    try {
+      br = new BufferedReader(new FileReader(Paths.get(fileName)));
+      content = br.readLine();
 
-    // Work work = new Work();
+      while (content != null) {
+        content += "\n" + br.readLine();
+      }
+      br.close();
+      content = content == null ? "" : content;
 
-    // work.op = Operation.DIVIDE;
-    // work.num1 = 1;
-    // work.num2 = 0;
-    // try {
-    // int quotient = client.calculate(1, work);
-    // System.out.println("Whoa we can divide by 0");
-    // } catch (InvalidOperation io) {
-    // System.out.println("Invalid operation: " + io.why);
-    // }
+      RFile rFile = new RFile();
+      RFileMetadata rFileMetaData = new RFileMetadata();
 
-    // work.op = Operation.SUBTRACT;
-    // work.num1 = 15;
-    // work.num2 = 10;
-    // try {
-    // int diff = client.calculate(1, work);
-    // System.out.println("15-10=" + diff);
-    // } catch (InvalidOperation io) {
-    // System.out.println("Invalid operation: " + io.why);
-    // }
+      rFileMetaData.setFilename(filename);
+      rFileMetaData.setFilenameIsSet(true);
 
-    // SharedStruct log = client.getStruct(1);
-    // System.out.println("Check log: " + log.value);
+      rFile.setMeta(rFileMetaData);
+      rFile.setMetaIsSet(true);
+
+      rFile.setContent(content);
+      rFile.setContentIsSet(true);
+
+      client.writeFile(rFile);
+
+    } catch (Exception x) {
+      throw x;
+    } finally {
+      br.close();
+    }
   }
 
-  private static void writeFile() {
-    RFile rFile = new RFile();
-    RFileMetadata rFileMetaData = new RFileMetadata();
+  private static void readFile(FileStore.Client client) throws SystemException, TException {
+    String fileName = "sample.txt";
+    RFile rFile = client.readFile(filename);
+    System.out.println("Filename - " + rFile.getMeta().getFilename());
+    System.out.println("Version Number - " + rFile.getMeta().getVersion());
+    System.out.println("Content - " + rFile.getContent());
   }
+
 }
